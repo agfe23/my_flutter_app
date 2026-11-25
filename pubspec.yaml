@@ -1,18 +1,21 @@
 name: my_flutter_app
-description: Flutter app project skeleton.
+description: 한국교통대학교 스마트모바일 전자출결 UI/UX 개선.
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.14.0 <4.0.0'
+  flutter: '3.50.1'
 
 dependencies:
   flutter:
     sdk: flutter
+  material_ui: ^1.1.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

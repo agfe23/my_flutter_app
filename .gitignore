@@ -7,5 +7,13 @@ build/
 coverage/
 .idea/
 .vscode/
+*.iml
+.gradle/
+.kotlin/
+.cxx/
 android/local.properties
 ios/Flutter/.last_build_id
+ios/Flutter/Generated.xcconfig
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/ephemeral/
+ios/Runner/GeneratedPluginRegistrant.*
