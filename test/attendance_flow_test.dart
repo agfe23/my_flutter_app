@@ -8,6 +8,7 @@ Finder keyed(String value) => find.byKey(ValueKey(value));
 Future<void> pumpAttendance(
   WidgetTester tester, {
   DateTime? time,
+  DateTime Function()? clock,
   Size size = const Size(390, 844),
   double textScale = 1,
 }) async {
@@ -20,7 +21,7 @@ Future<void> pumpAttendance(
   addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
   await tester.pumpWidget(
     MyFlutterApp(
-      clock: () => time ?? DateTime(2026, 10, 27, 15, 35),
+      clock: clock ?? () => time ?? DateTime(2026, 10, 27, 15, 35),
       enableTicker: false,
       mockDelay: Duration.zero,
     ),
@@ -245,6 +246,99 @@ void main() {
     tester.view.resetViewInsets();
     await tester.pumpAndSettle();
   });
+
+  // iOS 플랫폼 설정으로 공통 Flutter UI를 검사합니다.
+  // 실제 iPhone 또는 macOS의 iOS 시뮬레이터 실행을 대신하지는 않습니다.
+  testWidgets('iOS 플랫폼에서 출석·상세·두 새로고침 방식과 출결 재진입을 유지한다', (tester) async {
+    var now = DateTime(2026, 10, 27, 15, 35);
+    await pumpAttendance(tester, clock: () => now);
+    expect(
+      Theme.of(tester.element(find.byType(AttendanceOverview))).platform,
+      TargetPlatform.iOS,
+    );
+
+    await tester.enterText(keyed('attendance-code'), 'AB');
+    await tapVisible(tester, keyed('submit-attendance'));
+    expect(find.text('출석이 확인되었어요'), findsOneWidget);
+    await openDetail(tester, 'mobile');
+    expectCount('present', 9);
+
+    now = DateTime(2026, 10, 27, 15, 36);
+    await tapVisible(tester, keyed('refresh-attendance'));
+    expect(find.text('최종 업데이트 15:36'), findsOneWidget);
+    expect(find.text('모바일앱프로그래밍'), findsOneWidget);
+    expectCount('present', 9);
+
+    now = DateTime(2026, 10, 27, 15, 37);
+    await tester.drag(
+      find.descendant(
+        of: find.byType(AttendanceDetailScreen),
+        matching: find.byType(SingleChildScrollView),
+      ),
+      const Offset(0, 320),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('최종 업데이트 15:37'), findsOneWidget);
+    expect(find.byType(AttendanceDetailScreen), findsOneWidget);
+    expectCount('present', 9);
+
+    await tapVisible(tester, find.byTooltip('이전 화면'));
+    expect(find.byType(CourseSelectionScreen), findsOneWidget);
+    await tapVisible(tester, keyed('tab-home'));
+    expect(find.text('홈 화면'), findsOneWidget);
+    await tapVisible(tester, keyed('tab-attendance'));
+    expect(find.byType(AttendanceOverview), findsOneWidget);
+    expect(find.text('출석이 확인되었어요'), findsOneWidget);
+    expect(
+      tester.widget<FilledButton>(keyed('submit-attendance')).onPressed,
+      isNull,
+    );
+    expect(tester.takeException(), isNull);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
+
+  testWidgets('375폭 iOS 안전영역과 키보드에서도 출석 버튼에 접근한다', (tester) async {
+    const size = Size(375, 812);
+    const safeArea = FakeViewPadding(top: 44, bottom: 34);
+    tester.view.viewPadding = safeArea;
+    tester.view.padding = safeArea;
+    addTearDown(tester.view.resetViewPadding);
+    addTearDown(tester.view.resetPadding);
+    await pumpAttendance(tester, size: size);
+
+    // 상단 노치와 하단 홈 표시줄 영역을 실제 터치 요소가 피해야 합니다.
+    expect(
+      tester.getTopLeft(keyed('choose-course')).dy,
+      greaterThanOrEqualTo(44),
+    );
+    expect(
+      tester.getBottomRight(keyed('tab-attendance')).dy,
+      lessThanOrEqualTo(size.height - 34),
+    );
+    expect(tester.takeException(), isNull);
+
+    await tapVisible(tester, keyed('attendance-code'));
+    tester.view.viewInsets = const FakeViewPadding(bottom: 300);
+    // 키보드가 하단 안전영역을 덮어도 viewPadding은 유지됩니다.
+    tester.view.padding = const FakeViewPadding(top: 44);
+    await tester.pumpAndSettle();
+    await tester.enterText(keyed('attendance-code'), 'ab');
+    await tester.ensureVisible(keyed('submit-attendance'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getBottomRight(keyed('submit-attendance')).dy,
+      lessThanOrEqualTo(size.height - 300),
+    );
+    await tapVisible(tester, keyed('submit-attendance'));
+    expect(find.text('출석이 확인되었어요'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+
+    tester.view.resetViewInsets();
+    tester.view.padding = safeArea;
+    await tester.pumpAndSettle();
+    await openDetail(tester, 'mobile');
+    expectCount('present', 9);
+    expect(tester.takeException(), isNull);
+  }, variant: TargetPlatformVariant.only(TargetPlatform.iOS));
 
   for (final textScale in [1.0, 2.0]) {
     testWidgets('320폭·글자 $textScale배에서 세 화면과 시간설정에 레이아웃 오류가 없다', (

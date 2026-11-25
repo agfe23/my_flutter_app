@@ -2,6 +2,8 @@
 
 대학 모바일 프로그래밍 팀 과제인 **스마트모바일 앱 개선 프로젝트** 중 전자출결을 구현한 Flutter 앱입니다. 직접 설계한 목업의 와인색 테마, 카드 배치, 화면 흐름을 바탕으로 **간편한 출석**과 **편리한 과목별 출결 조회**를 목표로 합니다.
 
+Android와 iOS 프로젝트가 같은 `lib/`의 Dart 코드를 사용합니다. iOS에서도 같은 화면 배치, 출석 코드, 과목 조회와 테스트 시간 기능을 사용하며, 별도의 앱 화면을 중복 구현하지 않습니다.
+
 한국교통대학교 공식 앱이 아닌 **과제용 프로토타입**입니다. 학교 서버에 연결하지 않으며, 화면에 표시되는 수업과 출결은 더미 데이터입니다. 이 앱에서 출석해도 실제 학교 출결에는 반영되지 않습니다.
 
 ## 해결하려는 문제
@@ -83,7 +85,7 @@ flowchart LR
 
 ## 개발 환경
 
-검증한 개발 환경은 Windows 11과 Android 에뮬레이터입니다. 팀과 같은 Flutter 버전을 사용합니다.
+Android는 Windows 11과 Android 에뮬레이터에서 검증했습니다. iOS용 Xcode 프로젝트도 포함했으며, iOS 빌드와 실행에는 Mac이 필요합니다. 두 플랫폼 모두 팀과 같은 Flutter 버전을 사용합니다.
 
 | 항목 | 프로젝트 기준 |
 | --- | --- |
@@ -96,14 +98,17 @@ flowchart LR
 | Android compile/target SDK | Flutter 기본값, 현재 API 36 |
 | NDK | `ndkVersion = flutter.ndkVersion`, 현재 28.2.13676358 |
 | 검증한 에뮬레이터 | Android API 37 |
+| iOS 최소 버전 | **iOS 15.0** — Flutter 3.50.1 생성 설정 |
+| iOS 개발 도구 | macOS, Xcode, iOS Simulator 또는 iPhone |
+| iOS 네이티브 의존성 관리 | Flutter 기본 Swift Package Manager |
 
 AGP는 [android/settings.gradle.kts](android/settings.gradle.kts), Gradle은 [gradle-wrapper.properties](android/gradle/wrapper/gradle-wrapper.properties), NDK는 [android/app/build.gradle.kts](android/app/build.gradle.kts)에서 확인합니다. NDK 버전을 앱 설정에 별도로 고정하지 않고 Flutter 기본값을 따릅니다. Dart 패키지 재현을 위해 `pubspec.lock`도 함께 관리합니다.
 
-현재 Android 실행·빌드가 검증 대상입니다. iOS 실행 환경은 구성하지 않았으며, Windows 데스크톱 앱을 개발하기 위한 Visual Studio는 Android 테스트에 필요하지 않습니다.
+Windows에서는 iOS 앱을 빌드하거나 iOS Simulator를 실행할 수 없습니다. iOS 프로젝트 설정과 공통 Dart 코드를 준비한 상태이며, **실제 iOS 빌드·시뮬레이터·실기기 확인은 Mac에서 진행해야 합니다.** Windows 데스크톱 앱을 개발하기 위한 Visual Studio는 Android 테스트에 필요하지 않습니다. [Flutter iOS 개발 환경 안내](https://docs.flutter.dev/platform-integration/ios/setup), [지원 플랫폼](https://docs.flutter.dev/reference/supported-platforms)
 
 ## 설치와 실행
 
-### 1. 개발 도구 준비
+### 1. Android 개발 도구 준비
 
 - Git을 설치합니다. `git --version`으로 이미 설치되어 있는지 먼저 확인합니다.
 - Flutter **3.50.1** SDK를 설치하고 해당 SDK의 `bin` 폴더를 사용자 PATH에 추가합니다. Dart는 별도로 설치할 필요가 없습니다.
@@ -151,9 +156,69 @@ Android 기기가 목록에 없으면 Device Manager에서 에뮬레이터를 �
 
 첫 Android 빌드에서 NDK 자동 설치가 실패하면 Android Studio의 **SDK Manager → SDK Tools → Show Package Details → NDK (Side by side)**에서 **28.2.13676358**을 설치합니다. 필요한 SDK 구성요소를 설치하되 프로젝트의 `flutter.ndkVersion` 설정은 유지합니다.
 
+### 4. Mac에서 iOS 실행
+
+Mac에 **Flutter 3.50.1**과 Xcode를 설치합니다. Xcode에서 iOS 플랫폼과 시뮬레이터를 준비한 뒤, Mac 터미널에서 아래 명령을 실행합니다. Xcode를 다른 경로에 설치했다면 첫 명령의 경로를 바꿉니다.
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+sudo xcodebuild -runFirstLaunch
+sudo xcodebuild -license
+xcodebuild -downloadPlatform iOS
+flutter --version
+flutter doctor -v
+```
+
+라이선스 내용은 화면에서 확인한 뒤 승인합니다. `flutter doctor -v`의 Xcode 관련 항목을 해결한 다음 앱을 실행합니다. 세부 설치 절차는 [Flutter 공식 iOS 설정 안내](https://docs.flutter.dev/platform-integration/ios/setup)를 참고합니다.
+
+처음 내려받는 Mac에서는 원하는 작업 폴더에서 다음 명령을 실행합니다.
+
+```bash
+git clone https://github.com/agfe23/my_flutter_app.git
+cd my_flutter_app
+flutter pub get
+```
+
+이미 복제한 경우에는 프로젝트 폴더에서 자신의 변경을 정리한 후 `git pull --ff-only`와 `flutter pub get`으로 갱신합니다.
+
+Xcode 27에서는 다음 명령으로 **Device Hub**를 열고 iPhone 시뮬레이터를 실행합니다. Xcode 26 이하에서는 대신 `open -a Simulator`를 사용합니다.
+
+```bash
+open -a DeviceHub
+flutter devices
+```
+
+아래 `IOS_DEVICE_ID`를 `flutter devices`에 표시된 **iOS 시뮬레이터의 실제 ID**로 바꿉니다. 시뮬레이터가 목록에 없으면 먼저 기기를 부팅합니다.
+
+```bash
+flutter run -d "IOS_DEVICE_ID"
+```
+
+앱 이름은 **전자출결**입니다. 실행 후 **시계 아이콘 → 예시 시간으로 맞추기 → 이 시간으로 테스트 → 코드 AB** 순서로 Android와 같은 과정을 확인할 수 있습니다. 터미널의 `R`(`Shift` + `r`)로 재시작하면 테스트 시각과 제출 기록도 초기화됩니다.
+
+Mac에서 iOS 시뮬레이터용 빌드만 확인하려면 다음 명령을 사용합니다.
+
+```bash
+flutter build ios --simulator --debug
+```
+
+이 프로젝트는 Flutter 기본 **Swift Package Manager** 설정을 사용합니다. 현재는 별도의 네이티브 플러그인이 없어 `Podfile`이나 `pod install` 단계가 필요하지 않습니다. 이후 CocoaPods만 지원하는 네이티브 플러그인을 추가한다면 해당 플러그인과 Flutter의 안내를 따릅니다. [Swift Package Manager 안내](https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-app-developers)
+
+### 5. 실제 iPhone에서 확인
+
+Mac에 iPhone을 연결하고 기기의 **이 컴퓨터 신뢰**와 **개발자 모드** 설정을 완료합니다. 프로젝트 폴더에서 다음 명령으로 Xcode 작업 공간을 엽니다.
+
+```bash
+open ios/Runner.xcworkspace
+```
+
+Xcode의 **Runner 대상 → Signing & Capabilities**에서 **Automatically manage signing**을 켜고, 본인의 Apple 계정에 연결된 **Team**을 선택합니다. 기본 Bundle Identifier는 `com.example.myFlutterApp`이므로, 필요하면 본인이 사용할 수 있는 고유한 식별자로 바꿉니다. 이후 `flutter devices`에서 확인한 iPhone ID로 `flutter run -d "IOS_DEVICE_ID"`를 실행합니다.
+
+인증서와 서명 설정은 개발자의 Mac에서 관리합니다. 이 저장소에는 Apple 계정 정보나 서명 자료를 포함하지 않으며, App Store 배포는 이번 작업 범위에 포함하지 않습니다. 기기 준비와 서명은 [Flutter의 실제 iOS 기기 설정 안내](https://docs.flutter.dev/platform-integration/ios/setup)를 참고합니다.
+
 ## 검증
 
-**2026-11-25 검증 결과:** `flutter analyze` 오류 없음, `flutter test` **29개 통과**(데이터 20개·화면 9개), Android 디버그 APK 빌드 성공. 에뮬레이터에서도 소문자 코드 제출, 출석 완료, 요일순 과목 목록과 화면 이동을 확인했습니다.
+**2026-11-25 검증 결과:** `flutter analyze` 오류 없음, `flutter test` **31개 통과**(데이터 20개·화면 11개, iOS 플랫폼 설정 테스트 2개 포함). iOS 설정의 XML과 앱 아이콘 리소스 참조도 확인했습니다. Android 디버그 APK 빌드와 에뮬레이터의 소문자 코드 제출·출석 완료·요일순 과목 목록·화면 이동은 앞선 구현에서 확인했습니다.
 
 ```powershell
 flutter analyze
@@ -165,6 +230,8 @@ flutter build apk --debug
 
 자동 테스트는 수업 시작·종료 경계, 학기·날짜 변경, 영문 코드 형식과 대소문자, 중복 제출, 화면 이동, 선택 과목 유지 새로고침, 테스트 시각 적용·해제, Android 뒤로가기를 확인합니다. 320폭 화면, 글자 2배 확대, 키보드가 열린 상태의 출석 흐름도 포함합니다.
 
+iOS 플랫폼 설정을 사용하는 위젯 테스트에서는 공통 출석·상세·새로고침 흐름과 iPhone 크기의 안전 영역·키보드 상황을 확인합니다. 이는 Windows에서 수행할 수 있는 Flutter 위젯 테스트이며, **Xcode 빌드나 실제 iOS 실행 검증을 대신하지 않습니다.** Mac에서 위의 iOS 빌드·실행 절차를 별도로 확인해야 합니다.
+
 ## 코드 구조와 팀 통합
 
 | 파일 | 역할 |
@@ -175,6 +242,8 @@ flutter build apk --debug
 | [lib/attendance_screens.dart](lib/attendance_screens.dart) | 세 출결 화면의 배치와 코드 입력 UI |
 | [lib/attendance_data.dart](lib/attendance_data.dart) | 더미 시간표, 코드 검증, 학기·출석·집계 로직 |
 | [lib/testing_clock_sheet.dart](lib/testing_clock_sheet.dart) | 수동 날짜·시간 설정과 예시 시간 버튼 |
+| [ios/Runner](ios/Runner) | iOS 앱 이름·한국어 설정, AppDelegate·SceneDelegate, 실행 리소스 |
+| [ios/Runner.xcworkspace](ios/Runner.xcworkspace) | Mac의 Xcode에서 여는 iOS 작업 공간 |
 | [test/attendance_data_test.dart](test/attendance_data_test.dart) | 수업 경계와 출결 데이터 로직 검증 |
 | [test/attendance_flow_test.dart](test/attendance_flow_test.dart) | 화면 이동, 출석, 시간 설정과 작은 화면 검증 |
 
