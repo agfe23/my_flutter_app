@@ -1,6 +1,8 @@
 import 'dart:async';
 
-import 'package:material_ui/material_ui.dart';
+// 팀 통합 앱과 같은 Material 타입을 사용합니다 (Flutter 3.50.1 기준).
+// ignore: deprecated_member_use
+import 'package:flutter/material.dart';
 
 import 'app_theme.dart';
 import 'attendance_data.dart';

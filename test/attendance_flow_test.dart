@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart';
+// 팀 통합 앱과 같은 Material 타입을 사용합니다 (Flutter 3.50.1 기준).
+// ignore: deprecated_member_use
+import 'package:flutter/material.dart';
 import 'package:my_flutter_app/attendance_screens.dart';
 import 'package:my_flutter_app/main.dart';
 
@@ -51,6 +53,11 @@ void expectCount(String status, int count) {
 }
 
 void main() {
+  // Windows에서도 두 모바일 플랫폼의 위젯 동작을 각각 검증합니다.
+  final mobilePlatforms = TargetPlatformVariant({
+    TargetPlatform.android,
+    TargetPlatform.iOS,
+  });
   testWidgets('01→02→03에서 과목을 유지하여 새로고침하고 순서대로 돌아간다', (tester) async {
     await pumpAttendance(tester);
     expect(find.byType(AttendanceOverview), findsOneWidget);
@@ -72,7 +79,7 @@ void main() {
     expect(find.byType(CourseSelectionScreen), findsOneWidget);
     await tapVisible(tester, find.byTooltip('이전 화면'));
     expect(find.byType(AttendanceOverview), findsOneWidget);
-  });
+  }, variant: mobilePlatforms);
 
   testWidgets('상세 화면과 다른 탭에서 출결을 누르면 항상 01 화면으로 진입한다', (tester) async {
     await pumpAttendance(tester);
@@ -94,7 +101,7 @@ void main() {
       expect(find.byType(AttendanceOverview), findsOneWidget);
       expect(keyed('attendance-code'), findsOneWidget);
     }
-  });
+  }, variant: mobilePlatforms);
 
   testWidgets('현재 학기 과목을 실제 수업의 요일 순서로 표시한다', (tester) async {
     await pumpAttendance(tester);
@@ -111,7 +118,7 @@ void main() {
     await tapVisible(tester, keyed('course-network'));
     expect(find.byType(AttendanceDetailScreen), findsOneWidget);
     expect(find.text('컴퓨터네트워크'), findsOneWidget);
-  });
+  }, variant: mobilePlatforms);
 
   testWidgets('수업 없는 실제시간에서 조회하고 테스트 시간을 적용·해제한다', (tester) async {
     await pumpAttendance(tester, time: DateTime(2026, 10, 25, 12));
@@ -136,7 +143,7 @@ void main() {
     expect(find.text('지금은 진행 중인 수업이 없어요'), findsOneWidget);
     expect(keyed('attendance-code'), findsNothing);
     expect(keyed('clear-test-time'), findsNothing);
-  });
+  }, variant: mobilePlatforms);
 
   testWidgets('오입력은 집계하지 않고 성공한 출석은 재진입·새로고침에도 한 번 유지한다', (tester) async {
     await pumpAttendance(tester);
@@ -173,7 +180,7 @@ void main() {
       tester.widget<FilledButton>(keyed('submit-attendance')).onPressed,
       isNull,
     );
-  });
+  }, variant: mobilePlatforms);
 
   testWidgets('날짜·시간 선택기에 직접 입력하면 해당 요일 수업으로 바뀐다', (tester) async {
     await pumpAttendance(tester, time: DateTime(2026, 10, 25, 8, 5));
@@ -231,7 +238,7 @@ void main() {
     expect(find.text('오전 8:05'), findsOneWidget);
     expect(keyed('clear-test-time'), findsNothing);
     expect(tester.takeException(), isNull);
-  });
+  }, variant: mobilePlatforms);
 
   testWidgets('320폭에서 키보드가 열려도 확인 버튼까지 스크롤하여 출석한다', (tester) async {
     await pumpAttendance(tester, size: const Size(320, 640));
@@ -245,7 +252,7 @@ void main() {
     expect(tester.takeException(), isNull);
     tester.view.resetViewInsets();
     await tester.pumpAndSettle();
-  });
+  }, variant: mobilePlatforms);
 
   // iOS 플랫폼 설정으로 공통 Flutter UI를 검사합니다.
   // 실제 iPhone 또는 macOS의 iOS 시뮬레이터 실행을 대신하지는 않습니다.
@@ -366,6 +373,6 @@ void main() {
       expect(keyed('clear-test-time'), findsOneWidget);
       expect(find.byType(AttendanceDetailScreen), findsOneWidget);
       expect(tester.takeException(), isNull);
-    });
+    }, variant: mobilePlatforms);
   }
 }

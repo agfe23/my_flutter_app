@@ -218,7 +218,7 @@ Xcode의 **Runner 대상 → Signing & Capabilities**에서 **Automatically mana
 
 ## 검증
 
-**2026-11-25 검증 결과:** `flutter analyze` 오류 없음, `flutter test` **31개 통과**(데이터 20개·화면 11개, iOS 플랫폼 설정 테스트 2개 포함). iOS 설정의 XML과 앱 아이콘 리소스 참조도 확인했습니다. Android 디버그 APK 빌드와 에뮬레이터의 소문자 코드 제출·출석 완료·요일순 과목 목록·화면 이동은 앞선 구현에서 확인했습니다.
+**2026-11-26 검증 결과:** 팀 기준인 `package:flutter/material.dart`로 통일한 뒤 `flutter analyze` 통과, `flutter test` **42개 통과**(공통 데이터 20개·Android 플랫폼 설정 10개·iOS 플랫폼 설정 12개). 공통 화면·Material 통합 테스트를 Android와 iOS 각각에서 실행하며, iOS 안전 영역·키보드 등 전용 검증도 포함합니다. Android 디버그 APK를 새로 빌드·설치하여 에뮬레이터에서 예시 시간 적용, `AB` 출석 완료, 요일순 과목 목록, 상세 출석 9회 반영, 새로고침 시 과목·집계 유지와 홈·출결 탭 이동을 확인했습니다. 상위 MaterialApp의 테마·한국어 지역화 전달도 두 플랫폼 설정에서 검증했습니다. 실제 팀 통합 저장소에서의 실행은 통합 작업 시 별도로 확인합니다.
 
 ```powershell
 flutter analyze
@@ -230,9 +230,17 @@ flutter build apk --debug
 
 자동 테스트는 수업 시작·종료 경계, 학기·날짜 변경, 영문 코드 형식과 대소문자, 중복 제출, 화면 이동, 선택 과목 유지 새로고침, 테스트 시각 적용·해제, Android 뒤로가기를 확인합니다. 320폭 화면, 글자 2배 확대, 키보드가 열린 상태의 출석 흐름도 포함합니다.
 
-iOS 플랫폼 설정을 사용하는 위젯 테스트에서는 공통 출석·상세·새로고침 흐름과 iPhone 크기의 안전 영역·키보드 상황을 확인합니다. 이는 Windows에서 수행할 수 있는 Flutter 위젯 테스트이며, **Xcode 빌드나 실제 iOS 실행 검증을 대신하지 않습니다.** Mac에서 위의 iOS 빌드·실행 절차를 별도로 확인해야 합니다.
+iOS 플랫폼 설정 테스트는 출석·과목 조회·새로고침·탭 재진입, 한국어 날짜/시간 선택기, 잘못된 코드·중복 출석, 320폭·글자 2배 확대, iPhone 크기의 안전 영역·키보드 접근성, 팀 MaterialApp 호환성을 확인합니다.
+
+Windows에서 iOS 설정도 별도로 검사했습니다. XML/plist/storyboard/workspace/scheme 11개와 자산 JSON 2개를 파싱했고, PNG 22개 참조와 앱 아이콘 19개의 크기, Xcode 프로젝트 객체 60개의 참조 연결을 확인했습니다. AppDelegate·SceneDelegate·storyboard·Xcode 프로젝트와 scheme은 설치된 Flutter 3.50.1의 SwiftPM 템플릿 구조와 일치합니다. 앱 이름·한국어 설정·iOS 15.0 배포 대상도 확인했습니다.
+
+위 결과는 Windows에서 수행한 Flutter 위젯 테스트와 파일 구조 검증이며, **Swift 컴파일·Xcode 빌드·Apple 서명·실제 iOS 실행 검증을 대신하지 않습니다.** Mac에서 위의 iOS 빌드·실행 절차를 별도로 확인해야 합니다.
 
 ## 코드 구조와 팀 통합
+
+팀 프로젝트와 동일하게 **`package:flutter/material.dart`**를 사용합니다. `material_ui` 의존성은 제거했으며, 한국어 날짜·시간 선택기에는 Flutter SDK의 `flutter_localizations`를 사용합니다. 팀 앱에 연결할 때 상위 `MaterialApp`에도 `locale`, `supportedLocales`, `localizationsDelegates`를 [lib/main.dart](lib/main.dart)와 같이 설정해야 합니다. 서로 다른 Material 패키지의 위젯·테마·지역화 타입을 섞지 않습니다.
+
+Flutter 3.50.1에서는 SDK의 Material import와 해당 `GlobalMaterialLocalizations`에 사용 중단 예정 표시가 있습니다. 현재 팀의 패키지 기준에 맞추기 위해 **해당 줄에만** 사유 주석과 `ignore: deprecated_member_use`를 적용했습니다. 분석 설정에서 경고를 전체 비활성화하지 않았습니다. 향후 패키지 전환은 팀 앱 전체와 함께 진행합니다. [Flutter의 Material 패키지 분리 안내](https://docs.flutter.dev/release/breaking-changes/material-ui-and-cupertino-ui)
 
 | 파일 | 역할 |
 | --- | --- |
@@ -246,6 +254,7 @@ iOS 플랫폼 설정을 사용하는 위젯 테스트에서는 공통 출석·�
 | [ios/Runner.xcworkspace](ios/Runner.xcworkspace) | Mac의 Xcode에서 여는 iOS 작업 공간 |
 | [test/attendance_data_test.dart](test/attendance_data_test.dart) | 수업 경계와 출결 데이터 로직 검증 |
 | [test/attendance_flow_test.dart](test/attendance_flow_test.dart) | 화면 이동, 출석, 시간 설정과 작은 화면 검증 |
+| [test/material_integration_test.dart](test/material_integration_test.dart) | 팀 앱과 같은 MaterialApp에서 세 화면·테마·한국어·출석 호환성 검증 |
 
 시간표는 `attendance_data.dart`의 `mockCourses`, 출석 코드는 `demoCode = 'AB'`, 색상은 `app_theme.dart`의 `AppColors`에서 수정합니다. 코드 규칙을 유지하려면 새 코드도 영문 2글자로 지정합니다. 예시 데이터를 바꾸면 해당 데이터를 기대하는 테스트도 함께 조정합니다.
 
@@ -256,3 +265,5 @@ iOS 플랫폼 설정을 사용하는 위젯 테스트에서는 공통 출석·�
 작업 전 팀의 최신 변경을 확인하고, 기능별 브랜치에서 작은 단위로 수정합니다. 변경 사항에는 실행 방법과 확인한 테스트를 함께 남깁니다. Flutter·AGP·Gradle 및 패키지 버전 변경은 팀과 먼저 합의합니다.
 
 PC별 SDK 경로, 빌드 결과물, IDE 캐시와 Flutter SDK 자체는 커밋하지 않습니다. 공통 소스·설정·테스트와 `pubspec.lock`을 공유하여 다른 팀원도 같은 환경으로 실행할 수 있도록 유지합니다.
+
+빌드 캐시와 로컬 IDE 생성 파일은 앱 소스가 아닙니다. 정리 후에는 `flutter pub get`으로 의존성을 준비한 다음 `flutter run`을 실행하면 필요한 파일이 다시 생성됩니다. iOS의 `Generated.xcconfig`, `ephemeral/`, `GeneratedPluginRegistrant.*` 등도 해당 Mac의 경로에 맞게 생성되므로 Git에 추가하지 않습니다.

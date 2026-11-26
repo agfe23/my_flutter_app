@@ -1,4 +1,7 @@
-import 'package:material_ui/material_ui.dart';
+// 팀 통합 앱과 같은 Material 타입을 사용합니다 (Flutter 3.50.1 기준).
+// ignore: deprecated_member_use
+import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_theme.dart';
 import 'attendance_shell.dart';
@@ -28,6 +31,8 @@ class MyFlutterApp extends StatelessWidget {
       theme: buildAppTheme(),
       locale: const Locale('ko', 'KR'),
       supportedLocales: const [Locale('ko', 'KR')],
+      // 위 MaterialApp과 같은 SDK의 한국어 지역화를 사용합니다.
+      // ignore: deprecated_member_use
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       home: AttendanceShell(
         clock: clock,

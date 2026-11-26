@@ -1,4 +1,6 @@
-import 'package:material_ui/material_ui.dart';
+// 팀 통합 앱과 같은 Material 타입을 사용합니다 (Flutter 3.50.1 기준).
+// ignore: deprecated_member_use
+import 'package:flutter/material.dart';
 
 /// 목업의 와인색과 따뜻한 흰색을 한 곳에서 관리합니다.
 abstract final class AppColors {
