@@ -218,7 +218,7 @@ Xcode의 **Runner 대상 → Signing & Capabilities**에서 **Automatically mana
 
 ## 검증
 
-**2026-11-26 검증 결과:** 팀 기준인 `package:flutter/material.dart`로 통일한 뒤 `flutter analyze` 통과, `flutter test` **42개 통과**(공통 데이터 20개·Android 플랫폼 설정 10개·iOS 플랫폼 설정 12개). 공통 화면·Material 통합 테스트를 Android와 iOS 각각에서 실행하며, iOS 안전 영역·키보드 등 전용 검증도 포함합니다. Android 디버그 APK를 새로 빌드·설치하여 에뮬레이터에서 예시 시간 적용, `AB` 출석 완료, 요일순 과목 목록, 상세 출석 9회 반영, 새로고침 시 과목·집계 유지와 홈·출결 탭 이동을 확인했습니다. 상위 MaterialApp의 테마·한국어 지역화 전달도 두 플랫폼 설정에서 검증했습니다. 실제 팀 통합 저장소에서의 실행은 통합 작업 시 별도로 확인합니다.
+**2026-11-26 검증 결과:** 팀 기준인 `package:flutter/material.dart`로 통일한 뒤 `flutter analyze` 통과, `flutter test` **47개 통과**(공통 데이터 20개·Android 플랫폼 설정 12개·iOS 플랫폼 설정 15개). 공통 화면·Material 통합 테스트와 하단 바를 분리한 AttendanceTab 호스트 테스트를 Android와 iOS 각각에서 실행하며, iOS 안전 영역·키보드 등 전용 검증도 포함합니다. 기존 42개와 새 호스트 테스트 5개를 각각 실행해 모두 통과했습니다. Android 디버그 APK를 새로 빌드·설치하여 에뮬레이터에서 예시 시간 적용, `AB` 출석 완료, 요일순 과목 목록, 상세 출석 9회 반영, 새로고침 시 과목·집계 유지와 홈·출결 탭 이동을 확인했습니다. 상위 MaterialApp의 테마·한국어 지역화 전달도 두 플랫폼 설정에서 검증했습니다. 실제 팀 통합 저장소에서의 실행은 통합 작업 시 별도로 확인합니다.
 
 ```powershell
 flutter analyze
@@ -246,7 +246,8 @@ Flutter 3.50.1에서는 SDK의 Material import와 해당 `GlobalMaterialLocaliza
 | --- | --- |
 | [lib/main.dart](lib/main.dart) | 앱 시작, 한국어 지역화, 테마 연결 |
 | [lib/app_theme.dart](lib/app_theme.dart) | 색상, 버튼, 입력창, 하단 바 스타일 |
-| [lib/attendance_shell.dart](lib/attendance_shell.dart) | 하단 탭, 01→02→03 이동, 시계와 공통 출결 상태 유지 |
+| [lib/attendance_shell.dart](lib/attendance_shell.dart) | 단독 시연용 하단 탭과 다른 파트 자리, AttendanceTab 재사용 |
+| [lib/attendance_tab.dart](lib/attendance_tab.dart) | 통합용 출결 화면: 제목 줄, 01→02→03, 시계·출결 상태 유지. 하단 바 없음 |
 | [lib/attendance_screens.dart](lib/attendance_screens.dart) | 세 출결 화면의 배치와 코드 입력 UI |
 | [lib/attendance_data.dart](lib/attendance_data.dart) | 더미 시간표, 코드 검증, 학기·출석·집계 로직 |
 | [lib/testing_clock_sheet.dart](lib/testing_clock_sheet.dart) | 수동 날짜·시간 설정과 예시 시간 버튼 |
@@ -255,10 +256,65 @@ Flutter 3.50.1에서는 SDK의 Material import와 해당 `GlobalMaterialLocaliza
 | [test/attendance_data_test.dart](test/attendance_data_test.dart) | 수업 경계와 출결 데이터 로직 검증 |
 | [test/attendance_flow_test.dart](test/attendance_flow_test.dart) | 화면 이동, 출석, 시간 설정과 작은 화면 검증 |
 | [test/material_integration_test.dart](test/material_integration_test.dart) | 팀 앱과 같은 MaterialApp에서 세 화면·테마·한국어·출석 호환성 검증 |
+| [test/attendance_tab_test.dart](test/attendance_tab_test.dart) | 단일 하단 바, 탭 상태 유지·재진입·뒤로가기, 단독 iOS 안전 영역 검증 |
 
 시간표는 `attendance_data.dart`의 `mockCourses`, 출석 코드는 `demoCode = 'AB'`, 색상은 `app_theme.dart`의 `AppColors`에서 수정합니다. 코드 규칙을 유지하려면 새 코드도 영문 2글자로 지정합니다. 예시 데이터를 바꾸면 해당 데이터를 기대하는 테스트도 함께 조정합니다.
 
-팀 앱에 통합할 때는 현재 자리만 마련된 홈·도서관·교통·학식 화면을 각 팀원의 구현으로 교체합니다. **메인 화면 내부의 출결 버튼**과 **하단 출결 탭**은 모두 01 출결 화면으로 연결하고, 홈 탭은 홈 화면 이동을 유지합니다. 공통 하단 바를 중복으로 만들지 않고, 화면 이동 시 출결 상태가 유지되도록 현재 `AttendanceShell`의 상태 관리와 진입 동작을 연결합니다.
+### 기존 문제점 및 변경 내역
+
+| 기존 문제점 | 변경 내용 | 유지하는 동작 |
+| --- | --- | --- |
+| 출결의 Material 패키지가 팀 앱과 달라 테마·한국어 지역화 타입이 호환되지 않음 | `flutter/material.dart`와 SDK `flutter_localizations`로 통일 | 와인색 테마, 한국어 날짜·시간 선택기, 기존 출석 기능 |
+| `AttendanceShell`을 팀 `HomeTab`에 넣으면 두 위젯이 각각 하단 바를 만들어 중복됨 | 출결만 담당하는 `AttendanceTab`을 분리하고, 단독 시연 앱의 `AttendanceShell`도 이를 재사용 | 출결 제목 줄, 01→02→03, 출석·조회·새로고침·테스트 시계 |
+| 출결을 별도 탭으로 옮길 때 위젯을 제거하면 기록이 사라지거나 숨겨진 상세 화면이 뒤로가기를 처리할 수 있음 | 위젯 유지 방식과 `isActive`, `showOverview()` 연결 제공 | 기록·예시 시각 유지, 출결 재진입은 01, 다른 탭의 뒤로가기 정상 처리 |
+
+### 팀 통합본에 넣을 위젯
+
+팀의 `HomeTab`이 하단 바와 탭 전환을 담당하므로 **`AttendanceTab`을 전달합니다.** 이 위젯은 자체 제목 줄(AppBar)과 세 출결 화면을 포함하고, `MaterialApp`·하단 바·다른 탭 자리는 만들지 않습니다. `AttendanceShell`은 이 저장소를 단독 실행할 때만 사용합니다.
+
+팀 앱의 `lib/attendance/` 폴더에 다음 **5개 파일을 함께** 복사하면 상대 import가 유지됩니다.
+
+- `attendance_tab.dart`
+- `attendance_screens.dart`
+- `attendance_data.dart`
+- `testing_clock_sheet.dart`
+- `app_theme.dart`
+
+팀 앱의 `lib/main.dart`에서 연결하는 최소 예시는 다음과 같습니다. `HomeTab`은 팀 통합본에 있는 위젯으로, 이 저장소에서 중복 구현하지 않습니다.
+
+```dart
+import 'attendance/attendance_tab.dart';
+
+// 기존 HomeTab 생성 위치
+HomeTab(attendanceTab: const AttendanceTab())
+```
+
+팀의 상위 `MaterialApp`에는 앞서 설명한 한국어 delegates와 `flutter_localizations` 의존성이 필요합니다. 테마는 상위 앱에서 상속합니다. 기존 출결 테마 전체를 그대로 사용할 때는 `app_theme.dart`의 `buildAppTheme()`를 참고하되, 팀 공통 테마 적용 여부는 통합본에서 결정합니다. 출결 화면이 자체 AppBar를 제공하므로 출결 탭 위에 제목 줄을 추가로 만들 필요가 없습니다.
+
+### 탭 상태와 재진입 연결
+
+`HomeTab`에서 출석 기록을 유지하려면 `IndexedStack` 등으로 **같은 AttendanceTab 인스턴스의 State를 유지**합니다. 단순히 선택한 위젯만 body에 넣어 출결 위젯을 제거하면, 다음 진입 때 더미 기록과 테스트 시각이 초기화됩니다.
+
+탭을 유지하는 `HomeTab`에는 다음 두 연결도 적용합니다. 아래 `selectedIndex`와 `attendanceIndex`는 통합본의 실제 탭 변수에 대응하는 예시입니다.
+
+```dart
+// HomeTab의 State에서 한 번 생성합니다. build() 안에서 새로 만들지 않습니다.
+final attendanceKey = GlobalKey<AttendanceTabState>();
+
+// HomeTab의 IndexedStack 안에 유지할 출결 위젯
+AttendanceTab(
+  key: attendanceKey,
+  isActive: selectedIndex == attendanceIndex,
+)
+
+// 메인 화면의 출결 버튼 또는 하단 출결 탭을 누르는 처리에서 호출합니다.
+// 이 호출과 함께 기존 HomeTab의 selectedIndex도 출결 탭으로 바꿉니다.
+attendanceKey.currentState?.showOverview();
+```
+
+`isActive: false`이면 숨겨진 출결 화면은 상위 앱의 뒤로가기를 막지 않습니다. `false → true` 전환 시 01로 돌아오며, 같은 출결 탭을 다시 누를 때는 `showOverview()`로 01로 돌아갑니다. 두 경우 모두 이미 제출한 출석 기록과 테스트 시각은 유지됩니다. 동작하는 연결 예시는 [lib/attendance_shell.dart](lib/attendance_shell.dart)에 있습니다.
+
+실제 팀 `HomeTab` 소스는 이 저장소에 없으므로, 하단 바가 있는 모의 호스트로 위 계약을 검증합니다. 팀 통합본의 실제 탭 유지·전환 방식에 맞춘 최종 연결 확인은 필요합니다.
 
 ## 협업
 
